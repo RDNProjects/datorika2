@@ -1,0 +1,236 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>Bitcoin maks | Datorikas Projekts </title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="description" content="Bitcoin Wallet">
+    <meta name="keywords" content="bitcoin, wallet, btc">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="apple-touch-icon" sizes="57x57" href="https://style.binary.com/images/favicons/apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="https://style.binary.com/images/favicons/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="https://style.binary.com/images/favicons/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="https://style.binary.com/images/favicons/apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="https://style.binary.com/images/favicons/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="https://style.binary.com/images/favicons/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="https://style.binary.com/images/favicons/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="https://style.binary.com/images/favicons/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://style.binary.com/images/favicons/apple-touch-icon-180x180.png">
+    <link rel="icon" sizes="192x192" type="image/png" href="https://style.binary.com/images/favicons/favicon-192x192.png">
+    <link rel="icon" sizes="160x160" type="image/png" href="https://style.binary.com/images/favicons/favicon-160x160.png">
+    <link rel="icon" sizes="96x96" type="image/png" href="https://style.binary.com/images/favicons/favicon-96x96.png">
+    <link rel="icon" sizes="16x16" type="image/png" href="https://style.binary.com/images/favicons/favicon-16x16.png">
+    <link rel="icon" sizes="32x32" type="image/png" href="https://style.binary.com/images/favicons/favicon-32x32.png">
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="https://style.binary.com/binary.css">
+    <script language='JavaScript' type='text/javascript' src='javascript/common.js'></script>
+    <script language='JavaScript' type='text/javascript' src='javascript/hashes.js'></script>
+    <script language='JavaScript' type='text/javascript' src='javascript/jsbn.js'></script>
+    <script language='JavaScript' type='text/javascript' src='javascript/elliptic.js'></script>
+    <script language='JavaScript' type='text/javascript' src='javascript/btc.js'></script>
+    <script language='JavaScript' type='text/javascript' src='javascript/backend_bci.js'></script>
+    <script src="javascript/password_check/Mellt.js"></script>
+    <!-- Made by R. Rundans, along with Binary.com libraries -->
+    <script src="javascript/password_check/common-passwords.js"></script>
+    <style id="antiClickjack">body{display:none !important;}</style>
+    <script type="text/javascript">
+        if (self === top) {
+            var antiClickjack = document.getElementById("antiClickjack");
+            antiClickjack.parentNode.removeChild(antiClickjack);
+        } else {
+            top.location = self.location;
+        }
+    </script>
+</head>
+<body>
+<div id="header-binary">
+    <!-- to be made -->
+</div>
+
+<div id="wrapper">
+    <div id="container" class="center-text">
+        <span id="close" onclick="location.reload()" title="sign out"><img src="images/close_button.svg" /></span>
+        <div id="content">
+            <img src="images/bitcoin_wallet.svg"/>
+            <h1>Bitcoin maks</h1>
+            <p>Šis Bitcoin maciņš pilnībā darbojas šajā pārlūkprogrammā. Robertam Rundānam informācija nekad netiek nosūtīta.</p>
+
+            <form id="pass_form" action="javascript:open_wallet();">
+                <p>Lai atvērtu maku, vienkārši izvēlieties ļoti spēcīgu paroli. Jūsu parole tiks saglabāta kā maka hash. Jūs varat atvērt savu maku jebkurā laikā, vienkārši ievadot paroli..</p>
+                <input id="passphrase" type="password" placeholder="Parole" title="WIF">
+                <button type="submit">Login</button>
+                <div class="hint" id="days_to_crack"></div>
+            </form>
+
+            <form id="send_form" action="javascript:send_tx();">
+                <div class="left-text">
+                    <p>Lai iemaksātu līdzekļus savā makā, nosūtiet Bitcoin uz šo adresi:</p>
+                    <span id="adr"></span>
+                    <div>
+                        <h2 id="balance">Bilance: </h2>
+                        <span id="transactions"></span>
+                    </div>
+                    <div>
+                        <input id="to" type="text" placeholder="Saņēmēja adrese">
+                        <input id="amount" type="text" placeholder="BTC summa">
+                        <button type="submit">Sūtīt tagad</button>
+                    </div>
+                </div>
+                <div id="status"></div>
+            </form>
+
+            <p>Skatiet šī projekta pirmkodu <a href="https://github.com/RDNProjects/datorika" target="_blank">Github</a>.</p>
+        </div>
+    </div>
+</div>
+
+<div id="footer" class="primary-bg-color content-inverse-color">
+   <a> BTC Wallet project by R. Rundans </a>.
+</div>
+
+<script>
+    var tx, keys, fee = 0.0001,
+        mellt;
+
+    function balance_cb(amount) {
+        if (isNaN(amount)) amount = '?'; else amount = js.format_money(amount, 8);
+
+        $('balance').innerHTML = "<span title='autjaunot' onclick='refresh(true);' style='cursor:pointer'>Bilance: <b id=amt>" + amount + "</b> BTC</span>";
+        $('transactions').innerHTML = "<a class='button-secondary' href='" + backend.adr_page + keys.adr + "' target=_blank><span>transactions</span></a>";
+    }
+
+    function refresh(set_amount) {
+        if (set_amount) $('amt').innerHTML = '?';
+
+        backend.get_balance(keys.adr, balance_cb);
+    }
+
+    function open_wallet() {
+        var pass = js.trim($('passphrase').value);
+        if (pass.length < 1) return;
+
+        keys = btc.get_keys(pass);
+
+        $('pass_form').hide();
+        $('send_form').show();
+        $('close').show();
+        $('to').focus();
+
+        $('adr').innerHTML = "<b>" + keys.adr + "</b>&ndash; <a href='javascript:show_wif()'><span id='key_action'>Parādīt</span> manu privāto atslēgu</a><br><span id=wif></span>";
+        refresh();
+        setInterval(refresh, 60000);
+    }
+
+    function show_wif() {
+        if ($('wif').innerHTML == '') {
+            $('wif').innerHTML = keys.wif;
+            $('key_action').innerHTML = 'Hide';
+        } else {
+            $('wif').innerHTML = '';
+            $('key_action').innerHTML = 'Show';
+        }
+    }
+
+    function broadcast_cb(res) {
+        if (res === '') {
+            $('to').value = '';
+            $('amount').value = '';
+            $('status').innerHTML = '<a target="_blank" href="https://blockchain.info/tx/' + tx.txid() + '" target=_blank>Darījums</a> sent.';
+        }
+        else $('status').innerHTML = 'Error: ' + res;
+
+        tx = null;
+        js.enable_form('send_form', true);
+        setTimeout(refresh, 1000);
+    }
+
+    function broadcast() {
+        var status = $('status');
+        status.innerHTML = 'Parakstīšana tx...';
+
+        var signed = tx.sign(keys);
+
+        status.innerHTML = 'Apraide...';
+
+        backend.send(signed, broadcast_cb);
+    }
+
+    function unspent_cb(utxo) {
+        if (utxo !== false) {
+            var total = tx.add_unspent(utxo), err = '';
+
+            var tx_total = tx.amount + fee;
+
+            if (total >= tx_total) {
+                var change = total - tx_total;
+
+                if (change > 0.000001) tx.add_output(keys.adr, change);
+
+                setTimeout(broadcast, 300);
+
+                return;
+            }
+            else err = 'Nav pietiekami naudas! Vajag' + js.format_money(tx_total - total, 8) + ' BTC vairāk.';
+        }
+        else err = 'Neizdevās iegūt neiztērētos rezultātus!';
+
+        tx = null;
+        js.enable_form('send_form', true);
+        $('status').innerHTML = err;
+    }
+
+    function send_tx() {
+        var dst = js.trim($('to').value), amount = parseFloat(js.trim($('amount').value));
+
+        if (dst === '' || btc.decode_adr(dst) === false || isNaN(amount)) return;
+
+        if (confirm('Sūtīt ' + amount + ' BTC uz ' + dst + '?')) {
+            tx = btc.new_tx();
+
+            tx.add_output(dst, amount);
+
+            js.enable_form('send_form', false);
+
+            $('status').innerHTML = 'Neiztērēto rezultātu iegūšana...';
+
+            backend.get_utxo(keys.adr, unspent_cb);
+        }
+    }
+
+    if (!JSON || !JSON.parse) alert("Jūsu pārlūkprogramma neatbalsta vietējo JSON dekodēšanu. Atvainojiet, šī lapa nedarbosies.");
+    else {
+        var x = new XMLHttpRequest();
+
+        if ('withCredentials' in x) {
+//            $('backend').innerHTML = backend.link;
+            $('pass_form').show();
+            var passphrase = $('passphrase');
+            passphrase.focus();
+            mellt = new Mellt();
+            passphrase.addEventListener('input', function () {
+                var pass = js.trim($('passphrase').value);
+                var daysToCrack = mellt.CheckPassword(pass);
+                var days_to_crack = $('days_to_crack');
+                if (daysToCrack < 0) {
+                    days_to_crack.innerHTML = 'Jūsu ievadītā parole ir viena no pasaulē visbiežāk izmantotajām parolēm. Jums nevajadzētu izmantot šo paroli.'
+                } else {
+                    var years;
+                    if (daysToCrack > 365) {
+                        years = Math.round(daysToCrack / 365 * 10) / 10;
+                        if (years > 1000000) {
+                            years = (Math.round(years / 1000000 * 10) / 10) + ' miljonu'
+                        } else if (years > 1000) {
+                            years = (Math.round(years / 1000)) + ' tūkstosu'
+                        }
+                    }
+                    days_to_crack.innerHTML = 'Tas aizņem aptuveni ' + (daysToCrack === 1000000000 ? '>' : '')
+                        + (years ? years + ' gadus' : daysToCrack + ' dienas')
+                        + ' lai uzlauztu šo paroli.';
+                }
+                days_to_crack.style.color = daysToCrack > 7 ? (days_to_crack < 30 ? '#AF7817' : 'green') : '#c03';
+            });
+        }
+        else alert("Jūsu pārlūkprogramma neatbalsta vairāku izcelsmes resursu kopīgošanu. Atvainojiet, šī lapa nedarbosies.");
+    }
+</script>
+</body>
+</html>
